@@ -1,5 +1,6 @@
 var express = require('express');
 var mongoose = require('mongoose');
+var bodyParser = require('body-parser');    // body-parser module를 bodyParser 변수에 담음
 var app = express();
 
 // DB Setting
@@ -22,7 +23,43 @@ db.on('error', function(){
 });
 
 app.set('view engine', 'ejs');
-app.use(express.static(__dirname + 'public'));
+app.use(express.static(__dirname + '/public'));
+app.use(bodyParser.json());                 // json 형식의 데이터를 받겠다.
+app.use(bodyParser.urlencoded({extended:true}));    // urlencoded data를 extended 알고리즘을 사용해 분석하겠다.
+
+// DB schema
+// DB에서 사용할 schema 설정
+var contactSchema = mongoose.Schema({
+    name : {type : String, required : true, unique : true},
+    email : {type : String},
+    phone : {type : String}
+});
+var Contact = mongoose.model('contact', contactSchema);// contact schema의 model을 생성
+
+// Routes
+// Route 설정
+// Home
+app.get('/', function(req, res){
+    res.redirect('/contacts');
+});
+// Contacts - Index
+app.get('/contacts', function(req, res){
+    Contact.find({}, function(err, contacts){       // DB에서 검색조건에 맞는 모델을 찾고 콜백함수를 호출하는 함수
+        if(err) return res.json(err);
+        res.render('contacts/index', {contacts : contacts});
+    });
+});
+// Contacts - New
+app.get('/contacts/new', function(req, res){
+    res.render('contacts/new');
+});
+// Conctacts - create
+app.post('/contacts', function(req, res){
+    Contact.create(req.body, function(err, contact){// DB에 data를 생성하는 함수
+        if(err) return res.json(err);
+        res.redirect('/contacts');
+    });
+});
 
 // Port Setting
 var port = 3000;
